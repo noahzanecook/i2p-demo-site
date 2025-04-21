@@ -89,7 +89,13 @@ async function fetchData() {
                 document.querySelector('.activity').style.backgroundColor = 'lightgreen';
             } else {
                 // 1-100, as it gets bigger subtract from green and add to red
-                document.getElementById('activity-value').textContent = 'Activity Detected: ' + firstRow.activity;
+                if (firstRow.activity > 66) {
+                    document.getElementById('activity-value').textContent = 'Activity Detected: (High) ' + firstRow.activity;
+                } else if (firstRow.activity > 33) {
+                    document.getElementById('activity-value').textContent = 'Activity Detected: (Medium) ' + firstRow.activity;
+                } else {
+                    document.getElementById('activity-value').textContent = 'Activity Detected: (Low) ' + firstRow.activity;
+                }
                 let green = 240 - firstRow.activity;
                 document.querySelector('.activity').style.backgroundColor = `rgb(245, ${green}, 66)`;
             }
