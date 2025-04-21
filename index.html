@@ -22,26 +22,114 @@
             </a>
         </section>
     </div>
+
     <div class="hello-to-any-strangers-reading-this">
         <div class="hello">
             <h1>Activity Monitoring Dashboard</h1>
         </div>
+    </div>
     <main>
         <section class="status">
             <div class="presence">
                 <h2>Human Presence</h2>
+                <span id="presence-value">Loading...</span>
             </div>
             <div class="activity">
                 <h2>Activity Level</h2>
+                <span id="activity-value">Loading...</span>
             </div>
             <div class="fall">
                 <h2>Fall Status</h2>
+                <span id="fall-value">Loading...</span>
             </div>
         </section>
         <div class="time">
             <h3>Time of last Update</h3>
         </div>
-    </div>
-    <script src="js/script.js"></script>
+    <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    // Initialize Supabase client
+    const supabaseUrl = 'https://wbhrmosadqfywnjipomt.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaHJtb3NhZHFmeXduamlwb210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwMzU4ODQsImV4cCI6MjA2MDYxMTg4NH0.Jif_kkeKhrwqdJHDnsBB1RXOFOh7InwDFj9NLaVNqWU';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // let lastCreatedAts = [];
+let pollInterval = null;
+
+async function fetchData() {
+    console.log("Fetching Data...");
+    const { data, error } = await supabase
+        .from('Format')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    if (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('presence-value').textContent = '-';
+        document.getElementById('activity-value').textContent = '-';
+        document.getElementById('fall-value').textContent = '-';
+        return;
+    }
+
+    if (data && data.length > 0) {
+            const firstRow = data[0]; // Use the first row of data
+            // Replace these property names with your actual column names if different
+            if (firstRow.presence == 1) {
+                document.getElementById('presence-value').textContent = 'Human Present';
+                document.querySelector('.presence').style.backgroundColor = 'lightgreen';
+            } else if (firstRow.presence == 0) {
+                document.getElementById('presence-value').textContent = 'Human Absent';
+                document.querySelector('.presence').style.backgroundColor = 'lightcoral';
+            }
+            
+            if (firstRow.activity == 0) {
+                document.getElementById('activity-value').textContent = 'No Activity';
+                document.querySelector('.activity').style.backgroundColor = 'lightcoral';
+            } else {
+                document.getElementById('activity-value').textContent = 'Activity Detected';
+                document.querySelector('.activity').style.backgroundColor = 'lightyellow';
+            }
+
+            if (firstRow.fall == 0) {
+                document.getElementById('fall-value').textContent = 'Fall Detected';
+                document.querySelector('.fall').style.backgroundColor = 'red';
+                document.querySelector('.presence').style.backgroundColor = 'lightcoral';
+                document.querySelector('.activity').style.backgroundColor = 'lightcoral';
+            } else if (firstRow.fall == 1) {
+                document.getElementById('fall-value').textContent = 'No Fall Detected';
+                document.querySelector('.fall').style.backgroundColor = 'lightgreen';
+            }
+            // Update time based on created_at
+            if (firstRow.created_at) {
+                document.querySelector('.time').innerHTML = `<h3>Time of last Update</h3><span>${new Date(firstRow.created_at).toLocaleString()}</span>`;
+            }
+            // --- Polling logic ---
+            // lastCreatedAts.push(firstRow.created_at);
+            // if (lastCreatedAts.length > 3) lastCreatedAts.shift();
+            // Stop if fall == 0
+            if (firstRow.fall == 0) {
+                console.log('Stopping polling: Fall detected');
+                document.body.style.backgroundColor = 'lightcoral';
+                clearInterval(pollInterval);
+            }
+            /* Stop if created_at is the same 3 times in a row
+            if (lastCreatedAts.length === 3 && lastCreatedAts[0] === lastCreatedAts[1] && lastCreatedAts[1] === lastCreatedAts[2]) {
+                console.log('Stopping polling: created_at same 3 times');
+                clearInterval(pollInterval);
+            } */
+        } else {
+            document.getElementById('presence-value').textContent = '-';
+            document.getElementById('activity-value').textContent = '-';
+            document.getElementById('fall-value').textContent = '-';
+        }
+    }
+
+    // Start polling every second
+    pollInterval = setInterval(fetchData, 1000);
+    // Optionally, call once immediately
+    fetchData();
+    </script>
 </body>
 </html>
